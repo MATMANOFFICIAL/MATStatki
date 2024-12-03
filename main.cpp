@@ -6,7 +6,7 @@
 #include "game.h"
 
 int main() {
-    Game game;
-    game.run();
+    Game game;// inicjalizacja gry
+    game.run(); //uruchomienie gry
     return 0;
 }

@@ -1,7 +1,7 @@
 #include "board.h"
 
 Board::Board() {
-    // Initialize the grid with zeros (empty cells)
+    // Inicjalizacja planszy wype³nionej zerami
     grid.resize(GRID_SIZE, std::vector<int>(GRID_SIZE, 0));
 }
 
@@ -12,7 +12,7 @@ void Board::placeShip(Ship& ship, const sf::Vector2i& start, bool horizontal) {
     for (int i = 0; i < ship.size; ++i) {
         int x = start.x + (horizontal ? i : 0);
         int y = start.y + (horizontal ? 0 : i);
-        grid[y][x] = 1; // Mark ship on grid
+        grid[y][x] = 1; // oznaczanie statku na planszy
         ship.positions.emplace_back(x, y);
     }
     ships.push_back(ship);
@@ -27,7 +27,7 @@ bool Board::isValidPlacement(const Ship& ship, const sf::Vector2i& start, bool h
             return false;
         }
     }
-
+    //niedokoñczona logika k³adzenia statków
     /*
     if (horizontal) {
         for (int i = 0; i < ship.size; i++) {
@@ -109,14 +109,14 @@ bool Board::isValidPlacement(const Ship& ship, const sf::Vector2i& start, bool h
 
 bool Board::attack(const sf::Vector2i& target) {
     if (grid[target.y][target.x] == 1) {
-        grid[target.y][target.x] = 2; // Mark hit
+        grid[target.y][target.x] = 2; //Trafienie
         return true;
     }
     else if (grid[target.y][target.x] == 0) {
-        grid[target.y][target.x] = 3; // Mark miss
+        grid[target.y][target.x] = 3; // Chybienie
         return false;
     }
-    return false; // Already attacked cell
+    return false; //Jeœli komórka by³a ju¿ atakowana
 }
 
 void Board::draw(sf::RenderWindow& window, const sf::Vector2f& offset, bool showShips) {
@@ -126,16 +126,16 @@ void Board::draw(sf::RenderWindow& window, const sf::Vector2f& offset, bool show
             cell.setPosition(offset.x + x * CELL_SIZE, offset.y + y * CELL_SIZE);
 
             if (grid[y][x] == 0) {
-                cell.setFillColor(sf::Color::Blue); // Empty cell
+                cell.setFillColor(sf::Color::Blue); // Pusta komórka
             }
             else if (grid[y][x] == 1) {
-                cell.setFillColor(showShips ? sf::Color::Green : sf::Color::Blue); // Ship (hidden by default)
+                cell.setFillColor(showShips ? sf::Color::Green : sf::Color::Blue); // Statek (domyœlnie w kolorze pustej komórki)
             }
             else if (grid[y][x] == 2) {
-                cell.setFillColor(sf::Color::Red); // Hit
+                cell.setFillColor(sf::Color::Red); // Trafiony
             }
             else if (grid[y][x] == 3) {
-                cell.setFillColor(sf::Color::White); // Miss
+                cell.setFillColor(sf::Color::White); // Chybiony
             }
 
             window.draw(cell);
@@ -146,17 +146,17 @@ void Board::draw(sf::RenderWindow& window, const sf::Vector2f& offset, bool show
 bool Board::isGameOver() {
     for (const auto& row : grid) {
         for (int cell : row) {
-            if (cell == 1) { // If there's any part of a ship left
-                return false;
+            if (cell == 1) { //Je¿eli jakaœ czêœæ statku nie jest trafiona 
+                return false; //gra siê nie koñczy
             }
         }
     }
-    return true; // No unsunk ships remain
+    return true; // Wszystkie statki s¹ zatopione
 }
 
 
-int Board::getcellstatus(int x, int y) {
+int Board::getcellstatus(int x, int y) { //funkcja zwracaj¹ca status komórki
     
-    return grid[y][x];
+    return grid[y][x]; 
 }
 

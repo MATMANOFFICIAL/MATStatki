@@ -7,15 +7,15 @@
 #include <cstdlib>
 #include <iostream>
 
-// Game class
+// Klasa gry
 class Game {
-    Board playerBoard; // Player's board
-    Board aiBoard;     // AI's board
-    std::vector<int> shipSizes = { 5, 4, 3, 3, 2 }; // Sizes of ships to place
-    // Handle player's attack on the AI board
+    Board playerBoard; // Plansza gracza
+    Board aiBoard;     // Plansza przeciwnika
+    std::vector<int> shipSizes = { 5, 4, 3, 3, 2 }; //Rozmiary statków
+    //funkcja ataku gracza
     void handlePlayerAttack(int mouseX, int mouseY);
     void aiAttack();
-    // Randomly place ships on the AI board
+    //Losowe rozmieszczenie statków
     void aiRandomPlacement();
     void PlayerPlacement(sf::Event event, bool* shipsplaced);
     void setnextaimove(int x, int y);
@@ -26,9 +26,9 @@ class Game {
 public:
     Game();
 
-    // Run the main game loop
+    // Funkcja uruchamiania gry
     void run();
 
 };
 
-#endif // GAME_H
+#endif

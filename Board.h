@@ -4,42 +4,42 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 
-// Constants for grid dimensions and cell sizes
+// Wielkoœæ komórek i ca³ej planszy
 const int GRID_SIZE = 10;
 const int CELL_SIZE = 40;
 
-// Ship structure
+// struktura statku
 struct Ship {
-    int size;                    // Size of the ship
-    bool horizontal;             // Orientation of the ship
-    std::vector<sf::Vector2i> positions; // List of grid positions occupied by the ship
+    int size;                    // Rozmiar statku
+    bool horizontal;             // zmienna przechowuj¹ca czy statek jest poziomo czy pionowo
+    std::vector<sf::Vector2i> positions; // koordynaty ró¿nych czêœci statku
 
     Ship(int s) : size(s), horizontal(true) {}
 };
 
-// Board class
+// Plansza
 class Board {
 public:
     Board();
 
-    // Place a ship on the board
+    // Funkcja k³adzenia statku
     void placeShip(Ship& ship, const sf::Vector2i& start, bool horizontal);
 
-    // Check if a ship can be placed at the given position and orientation
+    // Funkcja sprawdzania czy po³o¿enie jest poprawne
     bool isValidPlacement(const Ship& ship, const sf::Vector2i& start, bool horizontal);
 
-    // Handle an attack on the board
+    // funckja atakowania
     bool attack(const sf::Vector2i& target);
 
-    // Draw the board using SFML
+    // Funkcja tworz¹ca obraz planszy
     void draw(sf::RenderWindow& window, const sf::Vector2f& offset, bool showShips = true);
-    
+    //funkcja sprawdzania co jest na okreœlonych koordynatach
     int getcellstatus(int x, int y);
-
+    //funkcja sprawdzaj¹ca czy gra siê zakoñczy³a
     bool isGameOver();
 private:
-    std::vector<std::vector<int>> grid; // 2D grid to store cell states
-    std::vector<Ship> ships;            // List of ships placed on the board
+    std::vector<std::vector<int>> grid; // Lista 2d przsechowuj¹ca stan komórek
+    std::vector<Ship> ships;            // Lista statków na planszy
 };
 
-#endif // BOARD_H
+#endif

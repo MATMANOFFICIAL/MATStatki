@@ -158,7 +158,7 @@ void Game::PlayerPlacement(sf::Event event, bool* shipsplaced) {
     int row = (mouseY - BOARD_OFFSET_Y) / CELL_SIZE;
     Ship ship(shipSizes[currentShip]);
 
-    // Left-click to place horizontally, right-click for vertical
+    //Lewym poziomo, prawym pionowo
     if (event.type == sf::Event::MouseButtonPressed) {
         bool horizontal = event.mouseButton.button == sf::Mouse::Left;
         if (col >= 0 && row >= 0 && col < GRID_SIZE && row < GRID_SIZE) {
