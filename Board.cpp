@@ -1,7 +1,7 @@
 #include "board.h"
 
 Board::Board() {
-    // Inicjalizacja planszy wype³nionej zerami
+    // Inicjalizacja planszy wypeï¿½nionej zerami
     grid.resize(GRID_SIZE, std::vector<int>(GRID_SIZE, 0));
 }
 
@@ -12,100 +12,51 @@ void Board::placeShip(Ship& ship, const sf::Vector2i& start, bool horizontal) {
     for (int i = 0; i < ship.size; ++i) {
         int x = start.x + (horizontal ? i : 0);
         int y = start.y + (horizontal ? 0 : i);
-        grid[y][x] = 1; // oznaczanie statku na planszy
-        ship.positions.emplace_back(x, y);
+
+        // SprawdÅº, czy wspÃ³Å‚rzÄ™dne sÄ… w granicach planszy
+        if (isonboard(x, y)) {
+            grid[y][x] = 1; // oznaczanie statku na planszy
+            ship.positions.emplace_back(x, y);
+        }
     }
     ships.push_back(ship);
 }
+
 
 bool Board::isValidPlacement(const Ship& ship, const sf::Vector2i& start, bool horizontal) {
     for (int i = 0; i < ship.size; i++) {
         int x = start.x + (horizontal ? i : 0);
         int y = start.y + (horizontal ? 0 : i);
 
-        if (x < 0 || y < 0 || x >= GRID_SIZE || y >= GRID_SIZE || grid[y][x] != 0) {
+        // SprawdÅº, czy wspÃ³Å‚rzÄ™dne sÄ… w granicach planszy
+        if (!isonboard(x, y)) {
             return false;
         }
-    }
-    //niedokoñczona logika k³adzenia statków
-    /*
-    if (horizontal) {
-        for (int i = 0; i < ship.size; i++) {
-            int x = start.x + 1 + i;
-            int y = start.y;
-            if (x < 0 || y < 0 || x >= GRID_SIZE || y >= GRID_SIZE) {
-                if (grid[y][x] != 0) {
-                    return false;
-                }
-            }
+
+        // SprawdÅº, czy komÃ³rka jest pusta
+        if (grid[y][x] != 0) {
+            return false;
         }
 
-        for (int i = 0; i < ship.size; i++) {
-            int x = start.x + 1 - i;
-            int y = start.y;
-            if (x < 0 || y < 0 || x >= GRID_SIZE || y >= GRID_SIZE) {
-                if (grid[y][x] != 0) {
-                    return false;
-                }
-            }
-        }
+        // SprawdÅº otaczajÄ…ce komÃ³rki (czy statek nie dotyka innego statku)
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                int nx = x + dx;
+                int ny = y + dy;
 
-        int x = start.x;
-        int y = start.y-1;
-        if (x < 0 || y < 0 || x >= GRID_SIZE || y >= GRID_SIZE) {
-            if (grid[y][x] != 0) {
-                return false;
-            }
-        }
-        x = start.x;
-        y = start.y + ship.size-1;
-        if (x < 0 || y < 0 || x >= GRID_SIZE || y >= GRID_SIZE) {
-            if (grid[y][x] != 0) {
-                return false;
+                // PomiÅ„ sprawdzanie komÃ³rek poza planszÄ…
+                if (isonboard(nx, ny)) {
+                    if (grid[ny][nx] != 0) {
+                        return false;
+                    }
+                }
             }
         }
     }
-    else {
-        for (int i = 0; i < ship.size; i++) {
-            int x = start.x;
-            int y = start.y + 1 + i;
-            if (x < 0 || y < 0 || x >= GRID_SIZE || y >= GRID_SIZE) {
-                if (grid[y][x] != 0) {
-                    return false;
-                }
-            }
-        }
-
-        for (int i = 0; i < ship.size; i++) {
-            int x = start.x;
-            int y = start.y + 1 - i;
-            if (x < 0 || y < 0 || x >= GRID_SIZE || y >= GRID_SIZE) {
-                if (grid[y][x] != 0) {
-                    return false;
-                }
-            }
-        }
-
-        int x = start.x - 1;
-        int y = start.y;
-        if (x < 0 || y < 0 || x >= GRID_SIZE || y >= GRID_SIZE) {
-            if (grid[y][x] != 0) {
-                return false;
-            }
-        }
-        x = start.x + ship.size - 1;
-        y = start.y;
-        if (x < 0 || y < 0 || x >= GRID_SIZE || y >= GRID_SIZE) {
-            if (grid[y][x] != 0) {
-                return false;
-            }
-        }
-    }
-
-
-    */
     return true;
 }
+
+
 
 bool Board::attack(const sf::Vector2i& target) {
     if (grid[target.y][target.x] == 1) {
@@ -116,8 +67,13 @@ bool Board::attack(const sf::Vector2i& target) {
         grid[target.y][target.x] = 3; // Chybienie
         return false;
     }
-    return false; //Jeœli komórka by³a ju¿ atakowana
+    return false; //Jeï¿½li komï¿½rka byï¿½a juï¿½ atakowana
 }
+
+bool Board::isonboard(int x, int y) const {
+    return x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE;
+}
+
 
 void Board::draw(sf::RenderWindow& window, const sf::Vector2f& offset, bool showShips) {
     for (int y = 0; y < GRID_SIZE; ++y) {
@@ -126,10 +82,10 @@ void Board::draw(sf::RenderWindow& window, const sf::Vector2f& offset, bool show
             cell.setPosition(offset.x + x * CELL_SIZE, offset.y + y * CELL_SIZE);
 
             if (grid[y][x] == 0) {
-                cell.setFillColor(sf::Color::Blue); // Pusta komórka
+                cell.setFillColor(sf::Color::Blue); // Pusta komï¿½rka
             }
             else if (grid[y][x] == 1) {
-                cell.setFillColor(showShips ? sf::Color::Green : sf::Color::Blue); // Statek (domyœlnie w kolorze pustej komórki)
+                cell.setFillColor(showShips ? sf::Color::Green : sf::Color::Blue); // Statek (domyï¿½lnie w kolorze pustej komï¿½rki)
             }
             else if (grid[y][x] == 2) {
                 cell.setFillColor(sf::Color::Red); // Trafiony
@@ -146,16 +102,16 @@ void Board::draw(sf::RenderWindow& window, const sf::Vector2f& offset, bool show
 bool Board::isGameOver() {
     for (const auto& row : grid) {
         for (int cell : row) {
-            if (cell == 1) { //Je¿eli jakaœ czêœæ statku nie jest trafiona 
-                return false; //gra siê nie koñczy
+            if (cell == 1) { //Jeï¿½eli jakaï¿½ czï¿½ï¿½ statku nie jest trafiona 
+                return false; //gra siï¿½ nie koï¿½czy
             }
         }
     }
-    return true; // Wszystkie statki s¹ zatopione
+    return true; // Wszystkie statki sï¿½ zatopione
 }
 
 
-int Board::getcellstatus(int x, int y) { //funkcja zwracaj¹ca status komórki
+int Board::getcellstatus(int x, int y) { //funkcja zwracajï¿½ca status komï¿½rki
     
     return grid[y][x]; 
 }

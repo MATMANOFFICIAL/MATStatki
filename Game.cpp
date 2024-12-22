@@ -47,12 +47,11 @@ void Game::run() {
 
 
 //Funkcja ataku gracza
-void Game::handlePlayerAttack(int mouseX, int mouseY) { 
+void Game::handlePlayerAttack(int mouseX, int mouseY) {
     // Obliczanie koordynatów komórki klikniêtej myszk¹
     int col = (mouseX - (BOARD_OFFSET_X + 500)) / CELL_SIZE;
     int row = (mouseY - BOARD_OFFSET_Y) / CELL_SIZE;
 
-  
     if (col >= 0 && row >= 0 && col < GRID_SIZE && row < GRID_SIZE) {   // Sprawdzenie czy atak jest na planszy
         if (aiBoard.attack(sf::Vector2i(col, row))) { //wywo³ywanie funkcji ataku która sparwdza czy statek zosta³ trafiony
             std::cout << "Statek przeciwnika Trafiony!" << std::endl;
@@ -70,7 +69,7 @@ void Game::aiAttack() {
     int y;
     std::srand(std::time(nullptr)); // Ziarno losowania
     while (!attacked) { 
-        if (nextAIX != -1) //je¿eli przeciwnik ma zaplanowany kolejny atak to go wykonuje
+        if (nextAIX != -1 && nextAIY != -1) //je¿eli przeciwnik ma zaplanowany kolejny atak to go wykonuje
         {
             x = nextAIX;
             y = nextAIY;
@@ -104,11 +103,11 @@ void Game::setnextaimove(int x,int y) {
             nextAIX = x;                   // chyba ¿e pole po prawej by³o strzelone wczeœniej, wtedy na dole
             nextAIY = y+1;
         }
-        else if ((playerBoard.getcellstatus(x, y - 1) == 0 || playerBoard.getcellstatus(x, y - 1) == 1) && y - 1 <= GRID_SIZE) {
+        else if ((playerBoard.getcellstatus(x, y - 1) == 0 || playerBoard.getcellstatus(x, y - 1) == 1) && y - 1 >= 0) {
             nextAIX = x;                    // chyba ¿e pole na dole by³o strzelone wczeœniej, wtedy na górze
             nextAIY = y-1;
         }
-        else if ((playerBoard.getcellstatus(x - 1, y) == 0 || playerBoard.getcellstatus(x - 1, y) == 1) && x - 1 <= GRID_SIZE) {
+        else if ((playerBoard.getcellstatus(x - 1, y) == 0 || playerBoard.getcellstatus(x - 1, y) == 1) && x - 1 >= 0) {
             nextAIX = x - 1;                 // chyba ¿e pole na górze by³o strzelone wczeœniej, wtedy po lewej
             nextAIY = y;
         }

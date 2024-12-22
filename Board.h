@@ -4,15 +4,15 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 
-// Wielkoœæ komórek i ca³ej planszy
+// Wielkoï¿½ï¿½ komï¿½rek i caï¿½ej planszy
 const int GRID_SIZE = 10;
 const int CELL_SIZE = 40;
 
 // struktura statku
 struct Ship {
     int size;                    // Rozmiar statku
-    bool horizontal;             // zmienna przechowuj¹ca czy statek jest poziomo czy pionowo
-    std::vector<sf::Vector2i> positions; // koordynaty ró¿nych czêœci statku
+    bool horizontal;             // zmienna przechowujï¿½ca czy statek jest poziomo czy pionowo
+    std::vector<sf::Vector2i> positions; // koordynaty rï¿½nych czï¿½ci statku
 
     Ship(int s) : size(s), horizontal(true) {}
 };
@@ -22,24 +22,25 @@ class Board {
 public:
     Board();
 
-    // Funkcja k³adzenia statku
+    // Funkcja kï¿½adzenia statku
     void placeShip(Ship& ship, const sf::Vector2i& start, bool horizontal);
 
-    // Funkcja sprawdzania czy po³o¿enie jest poprawne
+    // Funkcja sprawdzania czy poï¿½oï¿½enie jest poprawne
     bool isValidPlacement(const Ship& ship, const sf::Vector2i& start, bool horizontal);
 
     // funckja atakowania
     bool attack(const sf::Vector2i& target);
 
-    // Funkcja tworz¹ca obraz planszy
+    // Funkcja tworzï¿½ca obraz planszy
     void draw(sf::RenderWindow& window, const sf::Vector2f& offset, bool showShips = true);
-    //funkcja sprawdzania co jest na okreœlonych koordynatach
+    //funkcja sprawdzania co jest na okreï¿½lonych koordynatach
     int getcellstatus(int x, int y);
-    //funkcja sprawdzaj¹ca czy gra siê zakoñczy³a
+    bool isonboard(int x, int y) const;
+    //funkcja sprawdzajï¿½ca czy gra siï¿½ zakoï¿½czyï¿½a
     bool isGameOver();
 private:
-    std::vector<std::vector<int>> grid; // Lista 2d przsechowuj¹ca stan komórek
-    std::vector<Ship> ships;            // Lista statków na planszy
+    std::vector<std::vector<int>> grid; // Lista 2d przsechowujï¿½ca stan komï¿½rek
+    std::vector<Ship> ships;            // Lista statkï¿½w na planszy
 };
 
 #endif

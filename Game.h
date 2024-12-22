@@ -11,11 +11,11 @@
 class Game {
     Board playerBoard; // Plansza gracza
     Board aiBoard;     // Plansza przeciwnika
-    std::vector<int> shipSizes = { 5, 4, 3, 3, 2 }; //Rozmiary statków
+    std::vector<int> shipSizes = { 5, 4, 3, 3, 2 }; //Rozmiary statkï¿½w
     //funkcja ataku gracza
     void handlePlayerAttack(int mouseX, int mouseY);
     void aiAttack();
-    //Losowe rozmieszczenie statków
+    //Losowe rozmieszczenie statkï¿½w
     void aiRandomPlacement();
     void PlayerPlacement(sf::Event event, bool* shipsplaced);
     void setnextaimove(int x, int y);
