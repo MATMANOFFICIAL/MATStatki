@@ -3,7 +3,7 @@
 #include <ctime>
 #include <cstdlib>
 #include <iostream>
-#include "game.h"
+#include "Game.h"
 
 int main() {
     Game game;// inicjalizacja gry

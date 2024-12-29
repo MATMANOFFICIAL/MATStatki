@@ -1,8 +1,11 @@
-#include "board.h"
+#include "Board.h"
 
 Board::Board() {
-    // Inicjalizacja planszy wype�nionej zerami
+    // Inicjalizacja planszy wypełnionej zerami
     grid.resize(GRID_SIZE, std::vector<int>(GRID_SIZE, 0));
+    if (!font.loadFromFile("arial.ttf")) {
+        // błąd wczytywania czcionki
+    }
 }
 
 void Board::placeShip(Ship& ship, const sf::Vector2i& start, bool horizontal) {
@@ -22,6 +25,11 @@ void Board::placeShip(Ship& ship, const sf::Vector2i& start, bool horizontal) {
     ships.push_back(ship);
 }
 
+void Board::clear() {
+	grid.clear();
+	grid.resize(GRID_SIZE, std::vector<int>(GRID_SIZE, 0));
+	ships.clear();
+}
 
 bool Board::isValidPlacement(const Ship& ship, const sf::Vector2i& start, bool horizontal) {
     for (int i = 0; i < ship.size; i++) {
@@ -67,25 +75,39 @@ bool Board::attack(const sf::Vector2i& target) {
         grid[target.y][target.x] = 3; // Chybienie
         return false;
     }
-    return false; //Je�li kom�rka by�a ju� atakowana
+	return false; //Jeżeli komórka jest już trafiona
 }
 
 bool Board::isonboard(int x, int y) const {
     return x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE;
 }
 
+void Board::DrawTitle(sf::RenderWindow& window, const sf::Vector2f& offset) {
+	sf::Text text;
+	text.setFont(font);
+	text.setString("Plansza Gracza");
+	text.setCharacterSize(24);
+	text.setFillColor(sf::Color::Green);
+	text.setPosition(offset.x + 100, offset.y - 50);
+	window.draw(text);
+    text.setFillColor(sf::Color::Red);
+	text.setString("Plansza Przeciwnika");
+	text.setPosition(offset.x + 600, offset.y - 50);
+	window.draw(text);
+}
 
 void Board::draw(sf::RenderWindow& window, const sf::Vector2f& offset, bool showShips) {
+
     for (int y = 0; y < GRID_SIZE; ++y) {
         for (int x = 0; x < GRID_SIZE; ++x) {
             sf::RectangleShape cell(sf::Vector2f(CELL_SIZE - 2, CELL_SIZE - 2));
             cell.setPosition(offset.x + x * CELL_SIZE, offset.y + y * CELL_SIZE);
 
             if (grid[y][x] == 0) {
-                cell.setFillColor(sf::Color::Blue); // Pusta kom�rka
+                cell.setFillColor(sf::Color::Blue); // Pusta komórka
             }
             else if (grid[y][x] == 1) {
-                cell.setFillColor(showShips ? sf::Color::Green : sf::Color::Blue); // Statek (domy�lnie w kolorze pustej kom�rki)
+                cell.setFillColor(showShips ? sf::Color::Green : sf::Color::Blue); // Statek (domyślnie w kolorze pustej komórki)
             }
             else if (grid[y][x] == 2) {
                 cell.setFillColor(sf::Color::Red); // Trafiony
@@ -102,16 +124,16 @@ void Board::draw(sf::RenderWindow& window, const sf::Vector2f& offset, bool show
 bool Board::isGameOver() {
     for (const auto& row : grid) {
         for (int cell : row) {
-            if (cell == 1) { //Je�eli jaka� cz�� statku nie jest trafiona 
-                return false; //gra si� nie ko�czy
+            if (cell == 1) { //Jeżeli jakaś część statku nie jest trafiona 
+                return false; //gra się nie kończy
             }
         }
     }
-    return true; // Wszystkie statki s� zatopione
+    return true; // Wszystkie statki są zatopione
 }
 
 
-int Board::getcellstatus(int x, int y) { //funkcja zwracaj�ca status kom�rki
+int Board::getcellstatus(int x, int y) { //funkcja zwracająca status komórki
     
     return grid[y][x]; 
 }
