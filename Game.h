@@ -19,6 +19,7 @@ class Game {
     void DrawShipsChoiceScreen(sf::RenderWindow& window);
     void handleShipChoiceEvent(const sf::Event& event);
     void aiRandomPlacement();
+    bool isplacementpossible(std::vector<int> shipSizes);
 	void resetGame();
     void PlayerPlacement(sf::Event event, bool* shipsplaced, bool restart = false);
     void setnextaimove(int x, int y);
@@ -26,7 +27,9 @@ class Game {
     void drawpngBackground(sf::RenderWindow& window, const std::string& filename);
     void playsound(const std::string& filename);
     void drawMisc(sf::RenderWindow& window, sf::Font& font, int BOARD_OFFSET_X, int BOARD_OFFSET_Y);
+    void textbox(sf::Event event, float x, float y, int max);
     std::vector<std::tuple<int, int, bool>> getValidPlacements(Board& board, Ship& ship);
+    int FindActMax(int size);
     const int BOARD_OFFSET_X = 100;
     const int BOARD_OFFSET_Y = 50;
     int nextAIX=-1;
@@ -46,6 +49,11 @@ class Game {
     std::vector<std::string> winsoundfilenames;
     std::vector<std::string> losesoundfilenames;
 	int track = 0;
+    sf::Text textboxtext;
+    int currentnumberofships;
+    bool typedin;
+    sf::String playerInput;
+
 public:
     Game();
     

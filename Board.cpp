@@ -8,6 +8,40 @@ Board::Board() {
     }
 }
 
+void Board::sunkshipsupdater() {
+    for(Ship& ship : ships)
+    {
+        if (!ship.sunk)
+        {
+            bool wyn = true;
+            for (auto& pos : ship.positions)
+            {
+                if (getcellstatus(pos.x, pos.y) != 2) {
+                    wyn = false;
+                }
+            }
+            ship.sunk = wyn;
+        }
+        
+    }
+
+}
+
+void Board::sunkshipboardchanger() {
+    for (Ship& ship : ships)
+    {
+        if (ship.sunk)
+        {
+            for (auto& pos : ship.positions)
+            {
+                grid[pos.y][pos.x] = 4;
+            }
+            
+        }
+    }
+    
+}
+
 void Board::placeShip(Ship& ship, const sf::Vector2i& start, bool horizontal) {
     ship.horizontal = horizontal;
     ship.positions.clear();
@@ -24,6 +58,9 @@ void Board::placeShip(Ship& ship, const sf::Vector2i& start, bool horizontal) {
     }
     ships.push_back(ship);
 }
+
+
+
 
 void Board::clear() {
 	grid.clear();
@@ -115,8 +152,10 @@ void Board::draw(sf::RenderWindow& window, const sf::Vector2f& offset, bool show
             else if (grid[y][x] == 3) {
                 cell.setFillColor(sf::Color::White); // Chybiony
             }
-
-            window.draw(cell);
+            else if (grid[y][x] == 4) { //zatopiony
+                cell.setFillColor(sf::Color::Black);
+            }
+            window.draw(cell); 
         }
     }
 }

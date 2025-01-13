@@ -14,7 +14,7 @@ struct Ship {
     int size;                    // Rozmiar statku
     bool horizontal;             // zmienna przechowuj�ca czy statek jest poziomo czy pionowo
     std::vector<sf::Vector2i> positions; // koordynaty r�nych cz�ci statku
-
+    bool sunk = false;
     Ship(int s) : size(s), horizontal(true) {}
 };
 
@@ -27,7 +27,8 @@ public:
     sf::Font font;
     // Funkcja kładzenia statku
     void placeShip(Ship& ship, const sf::Vector2i& start, bool horizontal);
-
+    void sunkshipsupdater();
+    void sunkshipboardchanger();
     // Funkcja sprawdzania czy położenie jest poprawne
     bool isValidPlacement(const Ship& ship, const sf::Vector2i& start, bool horizontal);
 
