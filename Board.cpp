@@ -8,7 +8,7 @@ Board::Board() {
     }
 }
 
-void Board::sunkshipsupdater() {
+void Board::sunkshipsupdater(bool automarker) {
     for(Ship& ship : ships)
     {
         if (!ship.sunk)
@@ -21,13 +21,33 @@ void Board::sunkshipsupdater() {
                 }
             }
             ship.sunk = wyn;
+            sunkshipboardchanger(automarker);
         }
         
     }
 
 }
 
-void Board::sunkshipboardchanger() {
+
+bool Board::isSunkOn(int x, int y) {
+    
+    for (Ship& ship : ships) {
+        if (ship.sunk) {
+            for (auto& pos : ship.positions)
+            {
+                if (x == pos.x && y == pos.y)
+                {
+                    return true;
+                }
+            }
+
+        }
+
+    }
+    return false;
+}
+
+void Board::sunkshipboardchanger(bool automarker) {
     for (Ship& ship : ships)
     {
         if (ship.sunk)
@@ -35,12 +55,25 @@ void Board::sunkshipboardchanger() {
             for (auto& pos : ship.positions)
             {
                 grid[pos.y][pos.x] = 4;
+                if (automarker)
+                {
+                    for (int i = -1; i <= 1; i++)
+                    {
+                        for (int j = -1; j <= 1; j++) {
+                            int x = pos.x + i, y = pos.y + j;
+                            if (isonboard(x, y) && getcellstatus(x, y) == 0) grid[y][x] = 3;
+                        }
+                    }
+                }
             }
+            
             
         }
     }
     
 }
+
+
 
 void Board::placeShip(Ship& ship, const sf::Vector2i& start, bool horizontal) {
     ship.horizontal = horizontal;
@@ -60,7 +93,9 @@ void Board::placeShip(Ship& ship, const sf::Vector2i& start, bool horizontal) {
 }
 
 
-
+int Board::GetNumberOfShips() {
+	return ships.size();
+}
 
 void Board::clear() {
 	grid.clear();
@@ -177,3 +212,122 @@ int Board::getcellstatus(int x, int y) { //funkcja zwracająca status komórki
     return grid[y][x]; 
 }
 
+std::vector<Ship> Board::getVisibleShips() { 
+    std::vector<Ship> foundships;
+    std::vector<sf::Vector2i> curpos;
+
+    // Check horizontally
+    for (int y = 0; y < GRID_SIZE; ++y) {
+        int ciag = 0;
+        for (int x = 0; x < GRID_SIZE; ++x) {
+            if (getcellstatus(x, y) == 2) {
+                ciag++;
+                curpos.push_back(sf::Vector2i(x, y));
+            } else {
+                if (ciag > 1) {
+                    Ship ship(ciag);
+                    ship.positions = curpos;
+                    ship.horizontal = true;
+                    foundships.push_back(ship);
+                }
+                curpos.clear();
+                ciag = 0;
+            }
+        }
+        if (ciag > 1) {
+            Ship ship(ciag);
+            ship.positions = curpos;
+            ship.horizontal = true;
+            foundships.push_back(ship);
+        }
+        curpos.clear();
+    }
+
+    // Check vertically
+    for (int x = 0; x < GRID_SIZE; ++x) {
+        int ciag = 0;
+        for (int y = 0; y < GRID_SIZE; ++y) {
+            if (getcellstatus(x, y) == 2) {
+                ciag++;
+                curpos.push_back(sf::Vector2i(x, y));
+            } else {
+                if (ciag > 1) {
+                    Ship ship(ciag);
+                    ship.positions = curpos;
+                    ship.horizontal = false;
+                    foundships.push_back(ship);
+                }
+                curpos.clear();
+                ciag = 0;
+            }
+        }
+        if (ciag > 1) {
+            Ship ship(ciag);
+            ship.positions = curpos;
+            ship.horizontal = false;
+            foundships.push_back(ship);
+        }
+        curpos.clear();
+    }
+
+    return foundships;
+}
+std::vector<Ship> Board::getVisibleSingleShips() {
+    std::vector<Ship> foundships;
+    for (int x = 0; x < 10; ++x) {
+        for (int y = 0; y < 10; ++y) {
+			if (getcellstatus(x, y) == 2)
+			{
+                bool sam = true;
+                for (int i = -1; i <= 1; i++)
+                {
+                    for (int j = -1; j <= 1; j++) {
+                        if (isonboard(x+i,y+j))
+                        {
+                            if (i!=0 && j!=0 && getcellstatus(x+i,y+j) == 2) sam = false;
+                        }
+                    }
+                }
+                if (sam)
+                {
+                    Ship ship(1);
+                    ship.positions.push_back(sf::Vector2i(x, y));
+                    ship.horizontal = true;
+                    foundships.push_back(ship);
+                }
+			}
+        
+        }
+    }
+	return foundships;
+}
+
+//funkcja zwracająca vektor pól które nie były atakowane
+std::vector<std::pair<int, int>> Board::getAttackableTiles() {
+	std::vector<std::pair<int, int>> notAttackedFields;
+	for (int x = 0; x < 10; ++x) {
+		for (int y = 0; y < 10; ++y) {
+			
+            
+            bool czykolozbitego = false;
+            for (int i = -1; i <= 1; i++)
+            {
+                for (int j = -1; j <= 1; j++) {
+                    if (isonboard(x+i, y+j) && getcellstatus(x+i, y+j) == 4) czykolozbitego = true;
+                }
+            }
+
+			if (!czykolozbitego && (getcellstatus(x, y) == 0 || getcellstatus(x, y) == 1)) {
+				notAttackedFields.push_back(std::make_pair(x, y));
+			}
+		}
+	}
+	return notAttackedFields;
+}
+
+Board& Board::operator=(const Board& board) {
+	grid = board.grid;
+	ships = board.ships;
+	font = board.font;
+	return *this;
+}

@@ -20,15 +20,17 @@ class Game {
     void handleShipChoiceEvent(const sf::Event& event);
     void aiRandomPlacement();
     bool isplacementpossible(std::vector<int> shipSizes);
+    Board placerestifpossible(std::vector<int> theoryshipSizes, Board currentboard);
 	void resetGame();
     void PlayerPlacement(sf::Event event, bool* shipsplaced, bool restart = false);
-    void setnextaimove(int x, int y);
+    void setnextaimove();
     void drawaboatimage(sf::RenderWindow& window, int x, int y, const std::string& filename, float scale=0.5);
     void drawpngBackground(sf::RenderWindow& window, const std::string& filename);
     void playsound(const std::string& filename);
-    void drawMisc(sf::RenderWindow& window, sf::Font& font, int BOARD_OFFSET_X, int BOARD_OFFSET_Y);
+    void drawMisc(sf::RenderWindow& window);
     void textbox(sf::Event event, float x, float y, int max);
     std::vector<std::tuple<int, int, bool>> getValidPlacements(Board& board, Ship& ship);
+	void drawResetScreen(sf::RenderWindow& window);
     int FindActMax(int size);
     const int BOARD_OFFSET_X = 100;
     const int BOARD_OFFSET_Y = 50;
@@ -41,6 +43,7 @@ class Game {
     bool shipsPlaced;
     bool ktowygral;
     int currentshipsize;
+    bool automarker;
 	std::vector<std::shared_ptr<sf::Sound>> sounds; // vektor dzwiekow
 	std::vector<sf::SoundBuffer> soundBuffers; // vektor buforow dzwiekow
     bool mute;
@@ -53,6 +56,7 @@ class Game {
     int currentnumberofships;
     bool typedin;
     sf::String playerInput;
+	bool pausescreen = false;
 
 public:
     Game();
