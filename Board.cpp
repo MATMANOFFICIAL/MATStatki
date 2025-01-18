@@ -2,10 +2,8 @@
 
 Board::Board() {
     // Inicjalizacja planszy wypełnionej zerami
-    grid.resize(GRID_SIZE, std::vector<int>(GRID_SIZE, 0));
-    if (!font.loadFromFile("arial.ttf")) {
-        // błąd wczytywania czcionki
-    }
+    grid.resize(GRID_SIZE, std::vector<int>(GRID_SIZE,0));
+    font.loadFromFile("arial.ttf");
 }
 
 void Board::sunkshipsupdater(bool automarker) {
@@ -73,6 +71,48 @@ void Board::sunkshipboardchanger(bool automarker) {
     
 }
 
+void Board::drawRemainingShips(sf::RenderWindow& window) {
+    sf::Vector2f offset = sf::Vector2f(430, 140);
+	sf::Text text;
+	std::vector<Ship> statki = getRemainingShips();
+	text.setFont(font);
+	text.setCharacterSize(24);
+	text.setFillColor(sf::Color::Red);
+	text.setPosition(offset.x + 600, offset.y - 50);
+	int remshipcount[] = { 0,0,0,0,0,0 };
+    for (Ship ship : statki)
+    {
+		remshipcount[ship.size]++;
+    }
+    float smallCELL_SIZE = CELL_SIZE * 0.75;
+    text.setPosition(offset.x + 600, offset.y - 50);
+    text.setString("Niezatopione statki: ");
+    
+    if(remshipcount[1] != 0 || remshipcount[2] != 0 || remshipcount[3] != 0 || remshipcount[4] != 0 || remshipcount[5] != 0)
+    {
+        window.draw(text);
+    }
+    for (int i = 1; i <= 5; i++)
+    {
+        if (remshipcount[i]!=0)
+        {
+			
+            for (int a = 0; a < i; a++)
+            {
+                sf::RectangleShape cell(sf::Vector2f(smallCELL_SIZE - 2, smallCELL_SIZE - 2));
+                cell.setOutlineColor(sf::Color::Black);
+                cell.setOutlineThickness(2);
+                cell.setPosition(offset.x + 660 + a * smallCELL_SIZE, offset.y - 50 + 55 * i);
+                cell.setFillColor(sf::Color::Red);
+                window.draw(cell);
+            }
+            text.setString(std::to_string(remshipcount[i]));
+            text.setPosition(offset.x + 630, offset.y - 50 + 55 * i);
+            window.draw(text);
+        }
+    }
+
+}
 
 
 void Board::placeShip(Ship& ship, const sf::Vector2i& start, bool horizontal) {
@@ -331,3 +371,31 @@ Board& Board::operator=(const Board& board) {
 	font = board.font;
 	return *this;
 }
+
+
+std::vector<Ship> Board::getRemainingShips() {
+    std::vector<Ship> wynik;
+	for (Ship& ship : ships)
+	{
+		if (!ship.sunk)
+		{
+			wynik.push_back(ship);
+		}
+	}
+	return wynik;
+}
+
+std::vector<int> Board::getshipSizes(){
+    std::vector<int> wynik;
+	for (Ship& ship : ships)
+	{
+		wynik.push_back(ship.size);
+	}
+	return wynik;
+}
+
+
+
+
+
+

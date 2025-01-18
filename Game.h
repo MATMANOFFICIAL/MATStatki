@@ -32,6 +32,10 @@ class Game {
     std::vector<std::tuple<int, int, bool>> getValidPlacements(Board& board, Ship& ship);
 	void drawResetScreen(sf::RenderWindow& window);
     int FindActMax(int size);
+    void drawChosenShips(sf::RenderWindow& window);
+    std::vector<int> getUnplacedShipsizes();
+    void drawRemainingShipstoplace(sf::RenderWindow& window);
+    std::vector<int> unplacedshipsizes;
     const int BOARD_OFFSET_X = 100;
     const int BOARD_OFFSET_Y = 50;
     int nextAIX=-1;

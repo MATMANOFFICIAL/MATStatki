@@ -8,7 +8,6 @@
 // Wielkość komórek i planszy
 const int GRID_SIZE = 10;
 const int CELL_SIZE = 40;
-
 // struktura statku
 struct Ship {
     int size;                    // Rozmiar statku
@@ -44,10 +43,15 @@ public:
     //funkcja sprawdzająca czy gra się zakończyła
     bool isGameOver(); 
     bool isSunkOn(int x, int y);
+	std::vector<Ship> getRemainingShips(); //funkcja zwracająca statki które nie zostały zatopione
+	void drawRemainingShips(sf::RenderWindow& window); //funkcja rysująca statki które nie zostały zatopione
     std::vector<Ship> getVisibleShips();
     std::vector<Ship> getVisibleSingleShips();
     std::vector<std::pair<int, int>> getAttackableTiles();
 	int GetNumberOfShips();
+	
+    std::vector<int> getshipSizes();
+
 };
 
 #endif

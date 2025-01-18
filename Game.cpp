@@ -2,10 +2,8 @@
 
 
 Game::Game() : playerBoard(), aiBoard() {
-    if (!font.loadFromFile("arial.ttf")) {
-        // b³¹d wczytywania czcionki
-    }
     //ustawienie pocz¹tkowych wartoœci
+    font.loadFromFile("arial.ttf");
 	gameStarted = false; 
 	progress = 0;
     gameOver = false;
@@ -20,29 +18,27 @@ Game::Game() : playerBoard(), aiBoard() {
 	losesoundfilenames = { "lose.wav","losecr.wav" };
 }
 
-
-
 void Game::run() {
-    sf::RenderWindow window(sf::VideoMode(1050, 500), "Statki by Mateusz Jarzab", sf::Style::Titlebar |sf::Style::Close); //Tworzenie okna
+    sf::RenderWindow window(sf::VideoMode(1250, 500), "Statki by Mateusz Jarzab", sf::Style::Titlebar |sf::Style::Close); //Tworzenie okna
     while (window.isOpen()) { //Pêtla gry
         sf::Event event;
         while (window.pollEvent(event)) { //Pêtla w której mo¿na korzystaæ z event
             if (event.type == sf::Event::Closed) //Obs³uga zamkniêcia okna
                 window.close();
-			
-
 
             if (!gameStarted) { // Faza wyboru statków
                 handleShipChoiceEvent(event); //Wywo³anie funkcji wyboru statków
             }
             else { 
                 if (!shipsPlaced) { //Faza k³adzenia statków przez gracza
+                    
                     PlayerPlacement(event, &shipsPlaced);
+					if (event.type == sf::Event::MouseButtonPressed) unplacedshipsizes = getUnplacedShipsizes(); //Aktualizacja tablicy niepostawionych statków
                 }
                 else if (event.type == sf::Event::MouseButtonPressed && !gameOver && gameStarted) { //Faza gry
                     handlePlayerAttack(event.mouseButton.x, event.mouseButton.y); //Wywo³anie funkcji odpowiadaj¹cej za atak gracza
-                    playerBoard.sunkshipsupdater(automarker);
-                    aiBoard.sunkshipsupdater(automarker);
+					playerBoard.sunkshipsupdater(automarker);
+                    aiBoard.sunkshipsupdater(automarker); 
                     if (aiBoard.isGameOver()) { //sprawdzanie czy gracz wygra³
                         playsound(winsoundfilenames[track]);
                         gameOver = true;
@@ -98,7 +94,7 @@ void Game::run() {
         window.clear();
         drawpngBackground(window, "tlo.png"); //Rysowanie t³a
         drawMisc(window); //Rysowanie pobocznych napisów
-        
+		if(shipsPlaced)aiBoard.drawRemainingShips(window);
         if (gameStarted) { //Je¿eli gra siê zaczê³a rysujê plansze
             
             if (!gameOver) {
@@ -142,10 +138,10 @@ void Game::run() {
         }
         else { //Je¿eli gra siê nie zaczê³a, Rysujê ekran wyboru statków
             DrawShipsChoiceScreen(window);
-
+			drawChosenShips(window);
         }
 
-		if (pausescreen) drawResetScreen(window); //Rysujê ekran resetowania gry
+		if (pausescreen) drawResetScreen(window);  //Rysujê ekran resetowania gry
         window.display();
     }
 }
@@ -155,7 +151,6 @@ void Game::playsound(const std::string& filename) {
     {
         sf::SoundBuffer buffer;
         if (!buffer.loadFromFile(filename)) {
-            std::cerr << "Error loading sound file: " << filename << std::endl;
             return;
         }
 
@@ -177,15 +172,13 @@ void Game::drawpngBackground(sf::RenderWindow& window, const std::string& filena
 	if (!tlo.loadFromFile(filename)) {
 		// b³¹d wczytywania obrazka
 	}
-    if (!muteicon.loadFromFile("mute.png")) {
-        // b³¹d wczytywania obrazka
-    }
+    muteicon.loadFromFile("mute.png");
 	sf::Sprite sprite,sprite1;
 	sprite.setTexture(tlo);
 	sprite.setScale(0.75, 0.75);
 	sprite1.setTexture(muteicon);
 	sprite1.setScale(0.1, 0.1);
-	sprite1.setPosition(1000, 0);
+	sprite1.setPosition(1200, 0);
 	window.draw(sprite);
     if (mute)
     {
@@ -201,7 +194,7 @@ void Game::drawMisc(sf::RenderWindow & window) { //funkcja pisz¹ca poboczne napi
     podpis.setCharacterSize(20);
     podpis.setFillColor(sf::Color::Black);
     podpis.setStyle(sf::Text::Bold);
-    podpis.setPosition(BOARD_OFFSET_X + 600, BOARD_OFFSET_Y + 420);
+    podpis.setPosition(BOARD_OFFSET_X + 800, BOARD_OFFSET_Y + 420);
     podpis.setString("Mateusz Jarzab 2024 L02 177086");
     napisstatki.setCharacterSize(30);
     napisstatki.setFillColor(sf::Color::Cyan);
@@ -231,8 +224,11 @@ void Game::drawMisc(sf::RenderWindow & window) { //funkcja pisz¹ca poboczne napi
 		infoBackground.setOutlineThickness(2);
 		infoBackground.setOutlineColor(sf::Color::Green);
         window.draw(infoBackground);
+        
 
+        drawRemainingShipstoplace(window);
         window.draw(info);
+        
         sf::Text CurShipSizeDraw;
         CurShipSizeDraw.setFont(font);
         CurShipSizeDraw.setCharacterSize(30);
@@ -250,7 +246,7 @@ void Game::drawMisc(sf::RenderWindow & window) { //funkcja pisz¹ca poboczne napi
 void Game::drawaboatimage(sf::RenderWindow& window, int x, int y, const std::string& filename, float scale) { //Funkcja rysuj¹ca obrazek statku na ekranie pocz¹tkowym
     sf::Texture texture;
     if (!texture.loadFromFile(filename)) {
-        // b³¹d wczytywania obrazka
+		return;
     }
     sf::Sprite sprite;
     sprite.setPosition(x, y);
@@ -303,7 +299,7 @@ void Game::handleShipChoiceEvent(const sf::Event& event) {
                 shipSizes.push_back(3);
                 shipSizes.push_back(4);
                 
-                
+                unplacedshipsizes = getUnplacedShipsizes();
                 progress = 6;
 
             }
@@ -314,7 +310,7 @@ void Game::handleShipChoiceEvent(const sf::Event& event) {
     }
     else if (progress < 6 && progress >= 1) {
         if (max == 0) progress = 6;
-        textbox(event, BOARD_OFFSET_X + 425, BOARD_OFFSET_Y + 90, max);
+        textbox(event, BOARD_OFFSET_X + 505, BOARD_OFFSET_Y + 90, max);
         if (typedin) {
             for (int i = 0; i < currentnumberofships; i++)
             {
@@ -330,10 +326,12 @@ void Game::handleShipChoiceEvent(const sf::Event& event) {
     }
     else if(progress == 6)
     {
+        
         if (shipSizes.size()==0) //jeœli nie wybrano ¿adnych statków to daje domyœlnie 1 ma³y
         {
             shipSizes.push_back(1);
         }
+        unplacedshipsizes = getUnplacedShipsizes();
         aiRandomPlacement(); // Losowe rozmieszczenie statków przeciwnika
         gameStarted = true;
         
@@ -348,18 +346,18 @@ void Game::DrawShipsChoiceScreen(sf::RenderWindow& window) {
     text.setStyle(sf::Text::Bold);
     sf::FloatRect textRect = text.getLocalBounds();
     text.setOrigin((textRect.left + textRect.width / 2.0f) - 30, textRect.top + textRect.height / 2.0f - 20);
-    text.setPosition(sf::Vector2f(BOARD_OFFSET_X, BOARD_OFFSET_Y + 70));
+    text.setPosition(sf::Vector2f(BOARD_OFFSET_X + 80, BOARD_OFFSET_Y + 70));
 
 
-    sf::RectangleShape rectangle(sf::Vector2f(800, 220)); //Rysowanie prostok¹ta za tekstem
+    sf::RectangleShape rectangle(sf::Vector2f(BOARD_OFFSET_X + 650, BOARD_OFFSET_Y + 220)); //Rysowanie prostok¹ta za tekstem
     rectangle.setOrigin(rectangle.getSize().x / 2.0f, rectangle.getSize().y / 2.0f);
-    rectangle.setPosition(sf::Vector2f(window.getSize().x / 2.0f, window.getSize().y / 2.0f));
+    rectangle.setPosition(sf::Vector2f(window.getSize().x / 2.0f - 50, window.getSize().y / 2.0f));
     rectangle.setFillColor(sf::Color::Black);
     rectangle.setOutlineThickness(5);
     rectangle.setOutlineColor(sf::Color::Green);
     window.draw(rectangle);
-    drawaboatimage(window, BOARD_OFFSET_X, -100, "statek.png");
-    drawaboatimage(window, BOARD_OFFSET_X + 200, 300, "statek1.png", 0.4);
+    drawaboatimage(window, BOARD_OFFSET_X + 200, 270, "statek.png");
+    drawaboatimage(window, BOARD_OFFSET_X + 800, 270, "statek1.png", 0.4);
     if (progress == 0) { //Instrukcja wyboru statków
 
         text.setString(" Enter - domyslna ilosc statkow (4x1,3x2,2x3,1x4) \n Spacja - wybierz samodzielnie \n A - Wylacz/wlacz autooznaczanie miejsc \n dookola zatopionych statkow: " + std::string(automarker ? "ON" : "OFF"));
@@ -688,6 +686,7 @@ void Game::PlayerPlacement(sf::Event event, bool* shipsplaced, bool restart) {
         }
         if (!pausescreen && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Q)
         {
+            
             std::vector<int> theoryshipSizes;
 			for (int i = currentShip; i < shipSizes.size(); i++)
 			{
@@ -785,4 +784,107 @@ int Game::FindActMax(int size) {
             return wynik;
         }
     }
+}
+
+void Game::drawChosenShips(sf::RenderWindow& window) {
+    sf::Vector2f offset = sf::Vector2f(430, 140);
+    sf::Text text;
+    text.setFont(font);
+    text.setCharacterSize(24);
+    text.setFillColor(sf::Color::Green);
+    
+    int remshipcount[] = { 0,0,0,0,0,0 };
+    for (int shipsize : shipSizes)
+    {
+        remshipcount[shipsize]++;
+    }
+    float smallCELL_SIZE = CELL_SIZE * 0.75;
+    text.setPosition(offset.x + 600, offset.y - 50);
+	text.setString("Wybrane statki: ");
+    if (progress>1)
+    {
+        window.draw(text);
+    }
+    
+    for (int i = 1; i <= 5; i++)
+    {
+        if (remshipcount[i] != 0)
+        {
+            for (int a = 0; a < i; a++)
+            {
+                sf::RectangleShape cell(sf::Vector2f(smallCELL_SIZE - 2, smallCELL_SIZE - 2));
+                cell.setOutlineColor(sf::Color::Black);
+                cell.setOutlineThickness(2);
+                cell.setPosition(offset.x + 660 + a * smallCELL_SIZE, offset.y - 50 + 55 * i);
+                cell.setFillColor(sf::Color::Green);
+                window.draw(cell);
+            }
+            text.setString(std::to_string(remshipcount[i]));
+            text.setPosition(offset.x + 630, offset.y - 50 + 55 * i);
+            window.draw(text);
+        }
+    }
+}
+
+std::vector<int> Game::getUnplacedShipsizes() {
+	std::vector<int> unplaced;
+	int i = 0;
+    int j = 0;
+	std::vector<int> placedships = playerBoard.getshipSizes();
+    if (placedships.empty())
+    {
+		return shipSizes;
+    }
+    while (i<shipSizes.size()) {
+        if (shipSizes[i]!=placedships[j])
+        {
+			unplaced.push_back(shipSizes[i]);
+        }
+		else
+		{
+			j++;
+		}
+        i++;
+    }
+	return unplaced;
+}
+
+void Game::drawRemainingShipstoplace(sf::RenderWindow& window) {
+    sf::Vector2f offset = sf::Vector2f(430, 140);
+    sf::Text text;
+    text.setFont(font);
+    text.setCharacterSize(24);
+    text.setFillColor(sf::Color::Green);
+    text.setPosition(offset.x + 600, offset.y - 50);
+	int remshipcount[] = { 0,0,0,0,0,0 };
+    float smallCELL_SIZE = CELL_SIZE * 0.75;
+    text.setPosition(offset.x + 600, offset.y - 50);
+    text.setString("Statki do ustawienia: ");
+	window.draw(text);
+    for (int size : unplacedshipsizes)
+	{
+           remshipcount[size]++;
+	}
+
+
+    for (int i = 1; i <= 5; i++)
+    {
+        if (remshipcount[i] != 0)
+        {
+
+            for (int a = 0; a < i; a++)
+            {
+                sf::RectangleShape cell(sf::Vector2f(smallCELL_SIZE - 2, smallCELL_SIZE - 2));
+                cell.setOutlineColor(sf::Color::Black);
+                cell.setOutlineThickness(2);
+                cell.setPosition(offset.x + 660 + a * smallCELL_SIZE, offset.y - 50 + 55 * i);
+                cell.setFillColor(sf::Color::Green);
+                window.draw(cell);
+            }
+            text.setString(std::to_string(remshipcount[i]));
+            text.setPosition(offset.x + 630, offset.y - 50 + 55 * i);
+            window.draw(text);
+        }
+    }
+
 }
