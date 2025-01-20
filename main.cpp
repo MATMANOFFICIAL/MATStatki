@@ -5,10 +5,8 @@
 #include <iostream>
 #include "Game.h"
 int main() {
-
     Game game;// inicjalizacja gry
     game.run(); //uruchomienie gry
-    
     return 0;
 }
 

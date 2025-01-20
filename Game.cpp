@@ -5,21 +5,23 @@ Game::Game() : playerBoard(), aiBoard() {
     //ustawienie pocz¹tkowych wartoœci
     font.loadFromFile("arial.ttf");
 	gameStarted = false; 
-	progress = 0;
+	shipChoiceProgress = 0;
     gameOver = false;
     shipsPlaced = false;
-    ktowygral = false;
-    currentshipsize = 0;
+    playerWon = false;
+    currentShipSize = 0;
 	mute = true;
-	automarker = true;
-	playershotsoundfilenames = { "bum1.wav","hihihiha.wav" };
-	aishotsoundfilenames = {"bum.wav","garr.wav"  };
-	winsoundfilenames = { "win.wav","wincr.wav" };
-	losesoundfilenames = { "lose.wav","losecr.wav" };
+	autoMarker = true;
+    showPauseScreen = false;
+	playerShotSoundFilenames = { "bum1.wav","hihihiha.wav" };
+	aiShotSoundFilenames = {"bum.wav","garr.wav"  };
+	winSoundFilenames = { "win.wav","wincr.wav" };
+	loseSoundFilenames = { "lose.wav","losecr.wav" };
 }
 
 void Game::run() {
-    sf::RenderWindow window(sf::VideoMode(1250, 500), "Statki by Mateusz Jarzab", sf::Style::Titlebar |sf::Style::Close); //Tworzenie okna
+    //Tworzenie okna
+    sf::RenderWindow window(sf::VideoMode(1250, 500), "Statki by Mateusz Jarzab", sf::Style::Titlebar |sf::Style::Close); 
     while (window.isOpen()) { //Pêtla gry
         sf::Event event;
         while (window.pollEvent(event)) { //Pêtla w której mo¿na korzystaæ z event
@@ -27,59 +29,61 @@ void Game::run() {
                 window.close();
 
             if (!gameStarted) { // Faza wyboru statków
-                handleShipChoiceEvent(event); //Wywo³anie funkcji wyboru statków
+				handleShipChoice(event); //Wywo³anie funkcji obslugujacej wybór statków
             }
             else { 
                 if (!shipsPlaced) { //Faza k³adzenia statków przez gracza
-                    
-                    PlayerPlacement(event, &shipsPlaced);
-					if (event.type == sf::Event::MouseButtonPressed) unplacedshipsizes = getUnplacedShipsizes(); //Aktualizacja tablicy niepostawionych statków
+                    playerPlacement(event, &shipsPlaced);
+                    //Aktualizacja tablicy niepostawionych statków
+					if (event.type == sf::Event::MouseButtonPressed) unplacedShipSizes = getUnplacedShipSizes(); 
                 }
                 else if (event.type == sf::Event::MouseButtonPressed && !gameOver && gameStarted) { //Faza gry
-                    handlePlayerAttack(event.mouseButton.x, event.mouseButton.y); //Wywo³anie funkcji odpowiadaj¹cej za atak gracza
-					playerBoard.sunkshipsupdater(automarker);
-                    aiBoard.sunkshipsupdater(automarker); 
+                    //Wywo³anie funkcji odpowiadaj¹cej za atak gracza
+                    handlePlayerAttack(event.mouseButton.x, event.mouseButton.y); 
+					//Sprawdzamy czy jakies statki zostaly zatopione i je ustawiamy na zatopione
+					playerBoard.updateSunkShips(autoMarker); 
+                    aiBoard.updateSunkShips(autoMarker); 
                     if (aiBoard.isGameOver()) { //sprawdzanie czy gracz wygra³
-                        playsound(winsoundfilenames[track]);
+                        playSound(winSoundFilenames[soundTrackIndex]); 
                         gameOver = true;
-                        ktowygral = true; //true = gracz wygra³
+                        playerWon = true; //true = gracz wygra³
                     }
                    
                     if (playerBoard.isGameOver()) { //sprawdzanie czy przeciwnik wygra³
-                        playsound(losesoundfilenames[track]);
+                        playSound(loseSoundFilenames[soundTrackIndex]);
                         gameOver = true;
-                        ktowygral = false; //false = przeciwnik wygra³
+                        playerWon = false; //false = przeciwnik wygra³
                     }
                 }
             }
-            if (gameOver && event.type == sf::Event::KeyPressed) { //Restart gry
+			if (gameOver && event.type == sf::Event::KeyPressed) { //Restart gry gdy gra siê zakoñczy
                 resetGame();
             }
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape) //Ekran pauzy
             {
-                pausescreen = true;
+                showPauseScreen = true;
 
             }
-            if (pausescreen && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R) //Reset gry
+            //Reset gry z ekranu pauzy
+			if (showPauseScreen && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R) 
             {
                 resetGame();
-                pausescreen = false;
+                showPauseScreen = false;
 
             }
-            if (gameStarted && pausescreen && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter) //Powrót do gry
+			//Odpausowanie gry z ekranu pauzy
+            if ((gameStarted && showPauseScreen && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter) || (!gameStarted && showPauseScreen && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::W))
             {
-                pausescreen = false;
+                showPauseScreen = false;
             }
-            if (!gameStarted && pausescreen && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::W) //Odpauzowywanie podczas wyboru statków
+            //zmiana œcie¿ki dŸwiêkowej 
+			if (gameStarted && showPauseScreen && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::T) 
             {
-                pausescreen = false;
+                if (soundTrackIndex == 1) soundTrackIndex = 0;
+                else soundTrackIndex = 1;
             }
-			if (gameStarted && pausescreen && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::T) //zmiana œcie¿ki dŸwiêkowej
-            {
-                if (track == 1) track = 0;
-                else track = 1;
-            }
-            if (gameStarted && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::M) {//Wy³¹czanie/W³¹czanie dŸwiêku
+            //Wy³¹czanie/W³¹czanie dŸwiêku
+            if (gameStarted && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::M) {
                 mute = !mute;
             }
         }
@@ -91,33 +95,30 @@ void Game::run() {
             [](const std::shared_ptr<sf::Sound>& sound) { return sound->getStatus() == sf::Sound::Stopped; }),
             sounds.end());
 
-        window.clear();
-        drawpngBackground(window, "tlo.png"); //Rysowanie t³a
+		window.clear(); //Czyszczenie okna
+        drawPngBackground(window, "tlo.png"); //Rysowanie t³a
         drawMisc(window); //Rysowanie pobocznych napisów
-		if(shipsPlaced)aiBoard.drawRemainingShips(window);
+		
         if (gameStarted) { //Je¿eli gra siê zaczê³a rysujê plansze
-            
-            if (!gameOver) {
+            if (shipsPlaced)aiBoard.drawRemainingShips(window); //Rysowanie licznika niezatopionych statków przeciwnika
+            if (!gameOver) { 
                 // Tworzenie graficznych reprezentacji planszy w oknie
-                playerBoard.DrawTitle(window, sf::Vector2f(BOARD_OFFSET_X, BOARD_OFFSET_Y)); 
-                playerBoard.draw(window, sf::Vector2f(BOARD_OFFSET_X, BOARD_OFFSET_Y));
-                aiBoard.draw(window, sf::Vector2f(BOARD_OFFSET_X + 500, BOARD_OFFSET_Y), false);
-                
+                playerBoard.draw(window, sf::Vector2f(boardOffsetX, boardOffsetY));
+                aiBoard.draw(window, sf::Vector2f(boardOffsetX + 500, boardOffsetY), false);
             }
             else { //Je¿eli gra siê zakoñczy³a rysujê ekran koñcowy
-                playerBoard.DrawTitle(window, sf::Vector2f(BOARD_OFFSET_X, BOARD_OFFSET_Y));
-                playerBoard.draw(window, sf::Vector2f(BOARD_OFFSET_X, BOARD_OFFSET_Y));
-                aiBoard.draw(window, sf::Vector2f(BOARD_OFFSET_X + 500, BOARD_OFFSET_Y), true);
-                sf::RectangleShape rectangle(sf::Vector2f(600, 100));
+                playerBoard.draw(window, sf::Vector2f(boardOffsetX, boardOffsetY)); 
+                aiBoard.draw(window, sf::Vector2f(boardOffsetX + 500, boardOffsetY), true);
+                sf::RectangleShape rectangle(sf::Vector2f(600, 100)); //Rysujê prostok¹t za tekstem aby by³o bardziej przejrzyœcie
                 rectangle.setFillColor(sf::Color::Blue);
                 rectangle.setOrigin(rectangle.getSize().x / 2.0f, rectangle.getSize().y / 2.0f);
                 rectangle.setPosition(sf::Vector2f(window.getSize().x / 2.0f, window.getSize().y / 2.0f));
                 window.draw(rectangle);
 
                 sf::Text text;
-                text.setFont(font);
+                text.setFont(font); 
 
-                if (ktowygral) { //Zale¿nie od wygranego, wiadomoœæ jest inna i ma inny kolor
+                if (playerWon) { //Zale¿nie od wygranego, wiadomoœæ jest inna i ma inny kolor
                     text.setString("Koniec gry, Wygrales!");
                     text.setFillColor(sf::Color::Green);
                 }
@@ -129,24 +130,23 @@ void Game::run() {
                 text.setCharacterSize(50);
                 text.setStyle(sf::Text::Bold);
 
-                sf::FloatRect textRect = text.getLocalBounds(); //Rysujê prostok¹t za tekstem aby by³o bardziej przejrzyœcie
+                sf::FloatRect textRect = text.getLocalBounds(); 
                 text.setOrigin(textRect.left + textRect.width / 2.0f, textRect.top + textRect.height / 2.0f);
                 text.setPosition(sf::Vector2f(window.getSize().x / 2.0f, window.getSize().y / 2.0f));
-
                 window.draw(text);
             }
         }
         else { //Je¿eli gra siê nie zaczê³a, Rysujê ekran wyboru statków
-            DrawShipsChoiceScreen(window);
+            drawShipsChoiceScreen(window);
 			drawChosenShips(window);
         }
 
-		if (pausescreen) drawResetScreen(window);  //Rysujê ekran resetowania gry
+		if (showPauseScreen) drawPauseScreen(window);  //Rysujê ekran pauzy
         window.display();
     }
 }
 
-void Game::playsound(const std::string& filename) {
+void Game::playSound(const std::string& filename) {
     if (!mute)
     {
         sf::SoundBuffer buffer;
@@ -154,32 +154,32 @@ void Game::playsound(const std::string& filename) {
             return;
         }
 
-        // Store the buffer in the container to keep it alive
+		// Buffer dŸwiêku musi byæ przechowany w kontenerze, aby nie zosta³ zniszczony po zakoñczeniu funkcji
         soundBuffers.push_back(buffer);
 
-        // Create a shared pointer to a new sf::Sound object
+		// Stworzenie obiektu dŸwiêku i odtworzenie go
         auto sound = std::make_shared<sf::Sound>();
         sound->setBuffer(soundBuffers.back());
         sound->play();
 
-        // Store the shared pointer in the container to keep the sound alive
+		// dodanie dŸwiêku do kontenera
         sounds.push_back(sound);
     }
     
 }
-void Game::drawpngBackground(sf::RenderWindow& window, const std::string& filename) { //Funkcja rysuj¹ca t³o
+void Game::drawPngBackground(sf::RenderWindow& window, const std::string& filename) { //Funkcja rysuj¹ca t³o
 	sf::Texture tlo,muteicon;
 	if (!tlo.loadFromFile(filename)) {
-		// b³¹d wczytywania obrazka
+		return;
 	}
     muteicon.loadFromFile("mute.png");
-	sf::Sprite sprite,sprite1;
-	sprite.setTexture(tlo);
-	sprite.setScale(0.75, 0.75);
-	sprite1.setTexture(muteicon);
-	sprite1.setScale(0.1, 0.1);
-	sprite1.setPosition(1200, 0);
-	window.draw(sprite);
+    sf::Sprite sprite, sprite1;
+    sprite.setTexture(tlo);
+    sprite.setScale(0.75, 0.75);
+    sprite1.setTexture(muteicon);
+    sprite1.setScale(0.1, 0.1);
+    sprite1.setPosition(1200, 0);
+    window.draw(sprite);
     if (mute)
     {
         window.draw(sprite1);
@@ -187,22 +187,36 @@ void Game::drawpngBackground(sf::RenderWindow& window, const std::string& filena
 }
 
 
-void Game::drawMisc(sf::RenderWindow & window) { //funkcja pisz¹ca poboczne napisy
-    sf::Text napisstatki, podpis;
+void Game::drawMisc(sf::RenderWindow& window) { //funkcja rysuj¹ca inne, mniej wa¿ne elementy
+    sf::Text napisstatki, podpis, text;
     napisstatki.setFont(font);
     podpis.setFont(font);
     podpis.setCharacterSize(20);
     podpis.setFillColor(sf::Color::Black);
     podpis.setStyle(sf::Text::Bold);
-    podpis.setPosition(BOARD_OFFSET_X + 800, BOARD_OFFSET_Y + 420);
+    podpis.setPosition(boardOffsetX + 800, boardOffsetY + 420);
     podpis.setString("Mateusz Jarzab 2024 L02 177086");
     napisstatki.setCharacterSize(30);
     napisstatki.setFillColor(sf::Color::Cyan);
     napisstatki.setStyle(sf::Text::Bold);
-    napisstatki.setPosition(BOARD_OFFSET_X + 360, BOARD_OFFSET_Y - 50);
+    napisstatki.setPosition(boardOffsetX + 360, boardOffsetY - 50);
     napisstatki.setString("Gra w Statki");
     window.draw(podpis);
     window.draw(napisstatki);
+    if (gameStarted)
+    {
+        text.setFont(font);
+        text.setString("Plansza Gracza");
+        text.setCharacterSize(24);
+        text.setFillColor(sf::Color::Green);
+        text.setPosition(boardOffsetX + 100, boardOffsetY - 50);
+        window.draw(text);
+        text.setFillColor(sf::Color::Red);
+        text.setString("Plansza Przeciwnika");
+        text.setPosition(boardOffsetX + 600, boardOffsetY - 50);
+        window.draw(text);
+    }
+
 
     if (gameStarted && !shipsPlaced)
     {
@@ -213,7 +227,7 @@ void Game::drawMisc(sf::RenderWindow & window) { //funkcja pisz¹ca poboczne napi
         info.setStyle(sf::Text::Bold);
         sf::FloatRect textRect = info.getLocalBounds();
         info.setOrigin((textRect.left + textRect.width / 2.0f) - 30, textRect.top + textRect.height / 2.0f - 20);
-        info.setPosition(sf::Vector2f(5, BOARD_OFFSET_Y + 380));
+        info.setPosition(sf::Vector2f(5, boardOffsetY + 380));
 
         info.setString("R - Reset statków  Q - Ustaw Reszte losowo  Esc - Pauza\nMysz lewy - postaw poziomo   Mysz prawy - postaw pionowo");
 
@@ -226,7 +240,7 @@ void Game::drawMisc(sf::RenderWindow & window) { //funkcja pisz¹ca poboczne napi
         window.draw(infoBackground);
         
 
-        drawRemainingShipstoplace(window);
+        drawRemainingShipsToPlace(window);
         window.draw(info);
         
         sf::Text CurShipSizeDraw;
@@ -237,13 +251,13 @@ void Game::drawMisc(sf::RenderWindow & window) { //funkcja pisz¹ca poboczne napi
         sf::FloatRect textRect2 = CurShipSizeDraw.getLocalBounds();
         CurShipSizeDraw.setOrigin((textRect2.left + textRect2.width / 2.0f) - 30, textRect2.top + textRect2.height / 2.0f - 20);
         CurShipSizeDraw.setPosition(sf::Vector2f(-5, -5));
-        CurShipSizeDraw.setString("Statek: \n    " + std::to_string(currentshipsize));
+        CurShipSizeDraw.setString("Statek: \n    " + std::to_string(currentShipSize));
         window.draw(CurShipSizeDraw);
     }
 }
 
 
-void Game::drawaboatimage(sf::RenderWindow& window, int x, int y, const std::string& filename, float scale) { //Funkcja rysuj¹ca obrazek statku na ekranie pocz¹tkowym
+void Game::drawImage(sf::RenderWindow& window, int x, int y, const std::string& filename, float scale) { //Funkcja rysuj¹ca obrazek
     sf::Texture texture;
     if (!texture.loadFromFile(filename)) {
 		return;
@@ -256,38 +270,37 @@ void Game::drawaboatimage(sf::RenderWindow& window, int x, int y, const std::str
 }
 
 void Game::resetGame() { //Funkcja Resetowania gry
-	playerBoard.clear();
+	playerBoard.clear(); 
 	aiBoard.clear();
 	shipSizes.clear();
 	gameStarted = false;
-	progress = 0;
+	shipChoiceProgress = 0;
 	gameOver = false;
 	shipsPlaced = false;
-	ktowygral = false;
+	playerWon = false;
 	nextAIX = -1;
 	nextAIY = -1;
-	typedin = false;
-	pausescreen = false;
-	PlayerPlacement(sf::Event(), &shipsPlaced, true); //W player placement jest statyczna zmienna currentShip, 
+	typedIn = false;
+	showPauseScreen = false;
+	playerPlacement(sf::Event(), &shipsPlaced, true); //W player placement jest statyczna zmienna currentShip, 
                                                     //która trzeba zresetowaæ, st¹d zastosowa³em alternatywne jej wywo³anie 
 }
 
-
-void Game::handleShipChoiceEvent(const sf::Event& event) {
+void Game::handleShipChoice(const sf::Event& event) {
     static int max;
-    if (progress == 0) {
+    if (shipChoiceProgress == 0) {
 
-        if (event.type == sf::Event::KeyPressed && !pausescreen) {
+        if (event.type == sf::Event::KeyPressed && !showPauseScreen) {
             if (event.key.code == sf::Keyboard::Space) { //Kontynyuuj wybór statków
-                progress = 1;
-                textboxtext.setString("0");
-                currentnumberofships = 0;
-                typedin = false;
+                shipChoiceProgress = 1;
+                textBoxText.setString("0");
+                currentNumberOfShips = 0;
+                typedIn = false;
                 playerInput = "";
-                max = FindActMax(progress);
+                max = findCurrentMax(shipChoiceProgress);
             }
             else if (event.key.code == sf::Keyboard::Enter) { //Wybór domyœlnych statków
-                //default ships are 4 3 3 2 2 2 1 1 1 1
+                //domyslne statki to 4 3 3 2 2 2 1 1 1 1
                 shipSizes.push_back(1);
                 shipSizes.push_back(1);
                 shipSizes.push_back(1);
@@ -299,46 +312,48 @@ void Game::handleShipChoiceEvent(const sf::Event& event) {
                 shipSizes.push_back(3);
                 shipSizes.push_back(4);
                 
-                unplacedshipsizes = getUnplacedShipsizes();
-                progress = 6;
+                unplacedShipSizes = getUnplacedShipSizes();
+                shipChoiceProgress = 6;
 
             }
             else if (event.key.code == sf::Keyboard::A) { //W³¹cz/Wy³¹cz autooznaczanie
-                automarker = !automarker;
+                autoMarker = !autoMarker;
             }
         }
     }
-    else if (progress < 6 && progress >= 1) {
-        if (max == 0) progress = 6;
-        textbox(event, BOARD_OFFSET_X + 505, BOARD_OFFSET_Y + 90, max);
-        if (typedin) {
-            for (int i = 0; i < currentnumberofships; i++)
+	else if (shipChoiceProgress < 6 && shipChoiceProgress >= 1) { //Wybór ilosci poszczegolnych statkow od 1 do 5
+        if (max == 0) shipChoiceProgress = 6;
+		handleTextBox(event, boardOffsetX + 505, boardOffsetY + 90, max); //Obs³uga wpisywania iloœci statków
+        if (typedIn) {
+            for (int i = 0; i < currentNumberOfShips; i++)
             {
-                shipSizes.push_back(progress);
+                shipSizes.push_back(shipChoiceProgress);
             }
-            progress++;
-            textboxtext.setString("0");
-            currentnumberofships = 0;
+            shipChoiceProgress++;
+            textBoxText.setString("0");
+            currentNumberOfShips = 0;
             playerInput = "";
-            typedin = false;
-            max = FindActMax(progress);
+            typedIn = false;
+            max = findCurrentMax(shipChoiceProgress);
         }
     }
-    else if(progress == 6)
+    else if(shipChoiceProgress == 6) 
     {
         
         if (shipSizes.size()==0) //jeœli nie wybrano ¿adnych statków to daje domyœlnie 1 ma³y
         {
             shipSizes.push_back(1);
         }
-        unplacedshipsizes = getUnplacedShipsizes();
+        unplacedShipSizes = getUnplacedShipSizes();
         aiRandomPlacement(); // Losowe rozmieszczenie statków przeciwnika
-        gameStarted = true;
+		gameStarted = true; // Przejscie do fazy gry
         
     }
 }
 
-void Game::DrawShipsChoiceScreen(sf::RenderWindow& window) {
+
+// Funkcja rysuj¹ca ekran wyboru statków
+void Game::drawShipsChoiceScreen(sf::RenderWindow& window) {
     sf::Text text;
     text.setFont(font);
     text.setCharacterSize(30);
@@ -346,31 +361,29 @@ void Game::DrawShipsChoiceScreen(sf::RenderWindow& window) {
     text.setStyle(sf::Text::Bold);
     sf::FloatRect textRect = text.getLocalBounds();
     text.setOrigin((textRect.left + textRect.width / 2.0f) - 30, textRect.top + textRect.height / 2.0f - 20);
-    text.setPosition(sf::Vector2f(BOARD_OFFSET_X + 80, BOARD_OFFSET_Y + 70));
-
-
-    sf::RectangleShape rectangle(sf::Vector2f(BOARD_OFFSET_X + 650, BOARD_OFFSET_Y + 220)); //Rysowanie prostok¹ta za tekstem
+    text.setPosition(sf::Vector2f(boardOffsetX + 80, boardOffsetY + 70));
+    sf::RectangleShape rectangle(sf::Vector2f(boardOffsetX + 650, boardOffsetY + 220)); //Rysowanie prostok¹ta za tekstem
     rectangle.setOrigin(rectangle.getSize().x / 2.0f, rectangle.getSize().y / 2.0f);
     rectangle.setPosition(sf::Vector2f(window.getSize().x / 2.0f - 50, window.getSize().y / 2.0f));
     rectangle.setFillColor(sf::Color::Black);
     rectangle.setOutlineThickness(5);
     rectangle.setOutlineColor(sf::Color::Green);
     window.draw(rectangle);
-    drawaboatimage(window, BOARD_OFFSET_X + 200, 270, "statek.png");
-    drawaboatimage(window, BOARD_OFFSET_X + 800, 270, "statek1.png", 0.4);
-    if (progress == 0) { //Instrukcja wyboru statków
+    drawImage(window, boardOffsetX + 200, 270, "statek.png");
+    drawImage(window, boardOffsetX + 800, 270, "statek1.png", 0.4);
+    if (shipChoiceProgress == 0) { //Instrukcja wyboru statków
 
-        text.setString(" Enter - domyslna ilosc statkow (4x1,3x2,2x3,1x4) \n Spacja - wybierz samodzielnie \n A - Wylacz/wlacz autooznaczanie miejsc \n dookola zatopionych statkow: " + std::string(automarker ? "ON" : "OFF"));
+        text.setString(" Enter - domyslna ilosc statkow (4x1,3x2,2x3,1x4) \n Spacja - wybierz samodzielnie \n A - Wylacz/wlacz autooznaczanie miejsc \n dookola zatopionych statkow: " + std::string(autoMarker ? "ON" : "OFF"));
     }
-    else if (progress < 6 && progress >= 1) { //Wybór statku 5 kratkowego
-        static int lastprogress=0;
+    else if (shipChoiceProgress < 6 && shipChoiceProgress >= 1) { //Wybór statku 5 kratkowego
+        static int lastProgress=0;
         static std::string napis;
         
-        if(lastprogress != progress){
-            napis = "Wpisz ilosc " + std::to_string(progress) + "-masztowcow:";
-            for (int i = progress; i < 6; i++)
+        if(lastProgress != shipChoiceProgress){
+            napis = "Wpisz ilosc " + std::to_string(shipChoiceProgress) + "-masztowcow:";
+            for (int i = shipChoiceProgress; i < 6; i++)
             {
-                int max = FindActMax(i);
+                int max = findCurrentMax(i);
                 std::string koncowka;
                 if (max == 1)
                 {
@@ -385,22 +398,20 @@ void Game::DrawShipsChoiceScreen(sf::RenderWindow& window) {
                 napis += "\nMozesz postawic jeszcze " + std::to_string(max) + " " + std::to_string(i) + koncowka;
             }
         }
-        lastprogress = progress;
+        lastProgress = shipChoiceProgress;
         text.setString(napis);
     }
-    if(progress!=0 && progress !=6) window.draw(textboxtext);
+    if(shipChoiceProgress!=0 && shipChoiceProgress !=6) window.draw(textBoxText);
     window.draw(text);
-
-
 }
 //Funkcja ataku gracza
 void Game::handlePlayerAttack(int mouseX, int mouseY) {
     // Obliczanie koordynatów komórki klikniêtej myszk¹
-    int col = (mouseX - (BOARD_OFFSET_X + 500)) / CELL_SIZE;
-    int row = (mouseY - BOARD_OFFSET_Y) / CELL_SIZE;
+    int col = (mouseX - (boardOffsetX + 500)) / CELL_SIZE;
+    int row = (mouseY - boardOffsetY) / CELL_SIZE;
     if (col >= 0 && row >= 0 && col < GRID_SIZE && row < GRID_SIZE) {   // Sprawdzenie czy atak jest na planszy
-		bool bylopuste = aiBoard.getcellstatus(col, row) == 0 || aiBoard.getcellstatus(col, row) == 1;
-        if (aiBoard.attack(sf::Vector2i(col, row))) { playsound(playershotsoundfilenames[track]); } // Atak na planszê przeciwnika
+		bool bylopuste = aiBoard.getCellStatus(col, row) == 0 || aiBoard.getCellStatus(col, row) == 1;
+        if (aiBoard.attack(sf::Vector2i(col, row))) { playSound(playerShotSoundFilenames[soundTrackIndex]); } // Atak na planszê przeciwnika
         if (bylopuste) aiAttack(); //wywo³ywanie funkcji ataku przeciwnika
     }
 
@@ -426,144 +437,138 @@ void Game::aiAttack() {
 			y = pozycje[0].second;
         }
 
-        if(playerBoard.attack(sf::Vector2i(x, y))) playsound(aishotsoundfilenames[track]); // to losowanie wystêpuje ponownie
+        if(playerBoard.attack(sf::Vector2i(x, y))) playSound(aiShotSoundFilenames[soundTrackIndex]); // to losowanie wystêpuje ponownie
         attacked = true;
-        playerBoard.sunkshipsupdater(automarker);
-        aiBoard.sunkshipsupdater(automarker);
-        setnextaimove();//wywo³anie planowania kolejnego ataku
+        playerBoard.updateSunkShips(autoMarker);
+        aiBoard.updateSunkShips(autoMarker);
+        setNextAiMove();//wywo³anie planowania kolejnego ataku
                                  //(x i y to poprzednie koordynaty)
         }
     }
 
-void Game::setnextaimove()
+//Logika Bota
+void Game::setNextAiMove()
 {
+    //domyslnie ustawia na losowy atak czyli na -1 -1
     nextAIX = -1;
     nextAIY = -1;
-	std::vector<Ship> LongShips = playerBoard.getVisibleShips();
-	std::vector<Ship> SingleShips = playerBoard.getVisibleSingleShips();
-    std::random_shuffle(LongShips.begin(), LongShips.end());
-	std::random_shuffle(SingleShips.begin(), SingleShips.end());
+    std::vector<Ship> LongShips = playerBoard.getVisibleLongShips(); //te funkcje tworza nowe statki na podstawie tego co mozna
+    std::vector<Ship> SingleShips = playerBoard.getVisibleSingleShips();// zobaczyc i zwracaja je w wektorach z podzialem na 
+    std::random_shuffle(LongShips.begin(), LongShips.end()); //pojedyncze i reszte
+    std::random_shuffle(SingleShips.begin(), SingleShips.end());//a potem sa tasowane w celu uzyskania losowosci w wyborze,
+    //co i tak nie powinno sie wydarzyc bo zawsze na planszy bedzie 1 niezbity
 
-	if (LongShips.size() > 0) {
-		Ship ship = LongShips[0];
-        if (!ship.horizontal)
+    if (LongShips.size() > 0) { //najpierw probujemy zatopic statki ktore maja trafione wiecej niz 1 pole, bo wiemy w ktora
+        Ship ship = LongShips[0]; //strone moga znajdowac sie kolejne
+        if (!ship.isHorizontal)
         {
             int x = ship.positions[ship.positions.size() - 1].x;
-			int y = ship.positions[ship.positions.size() - 1].y+1;
+            int y = ship.positions[ship.positions.size() - 1].y + 1;// jesli poionowo, to probujemy zatopic w gore
 
-            if (playerBoard.isonboard(x,y) && playerBoard.getcellstatus(x, y) != 2 && playerBoard.getcellstatus(x, y) != 3) {
-					nextAIX = x;
-					nextAIY = y;
-                    return;
+            if (playerBoard.isOnBoard(x, y) && playerBoard.getCellStatus(x, y) != 2 && playerBoard.getCellStatus(x, y) != 3) {
+                nextAIX = x;
+                nextAIY = y;
+                return;
             }
             x = ship.positions[0].x;
-            y = ship.positions[0].y - 1;
-        if (playerBoard.isonboard(x, y) && playerBoard.getcellstatus(x, y) != 2 && playerBoard.getcellstatus(x, y) != 3) {
-                    
+            y = ship.positions[0].y - 1; // a jesli nie da sie w gore to w dol
+            if (playerBoard.isOnBoard(x, y) && playerBoard.getCellStatus(x, y) != 2 && playerBoard.getCellStatus(x, y) != 3) {
+
+                nextAIX = x;
+                nextAIY = y;
+                return;
+            }
+        }
+        else //z kolei gdy jest poziomo
+        {
+            int x = ship.positions[ship.positions.size() - 1].x + 1; //to probujemy zatopic w prawo
+            int y = ship.positions[ship.positions.size() - 1].y;
+
+            if (playerBoard.isOnBoard(x, y) && playerBoard.getCellStatus(x, y) != 2 && playerBoard.getCellStatus(x, y) != 3) {
+                nextAIX = x;
+                nextAIY = y;
+                return;
+            }
+
+
+            x = ship.positions[0].x - 1; //a jesli nie da sie w prawo to w lewo
+            y = ship.positions[0].y;
+
+            if (playerBoard.isOnBoard(x, y) && playerBoard.getCellStatus(x, y) != 2 && playerBoard.getCellStatus(x, y) != 3) {
+                nextAIX = x;
+                nextAIY = y;
+                return;
+            }
+
+
+        }
+    }
+    else if (SingleShips.size() > 0) { //jesli nie ma juz statkow ktore maja wiecej niz 1 pole trafione
+        Ship ship = SingleShips[0];
+        int x = ship.positions[0].x;
+        int y = ship.positions[0].y - 1; //to probujemy zatopic pojedyncze najpierw w dol 
+
+        if (playerBoard.isOnBoard(x, y) && playerBoard.getCellStatus(x, y) != 2 && playerBoard.getCellStatus(x, y) != 3) {
             nextAIX = x;
             nextAIY = y;
-			return;
-                }
-            }
-        else
-        {
-            int x = ship.positions[ship.positions.size() - 1].x+1;
-            int y = ship.positions[ship.positions.size() - 1].y;
-            if (playerBoard.isonboard(x, y)) {
-                if (playerBoard.getcellstatus(x, y) != 2 && playerBoard.getcellstatus(x, y) != 3) {
-                    nextAIX = x;
-                    nextAIY = y;
-					return;
-                }
-            }
+            return;
+        }
 
-                x = ship.positions[0].x-1;
-                y = ship.positions[0].y;
-                if (playerBoard.isonboard(x, y)) {
-                    if (playerBoard.getcellstatus(x, y) != 2 && playerBoard.getcellstatus(x, y) != 3) {
-                        nextAIX = x;
-                        nextAIY = y;
-                        return;
-                    }
-                }
-            }
+        x = ship.positions[0].x - 1; //jesli nie, to w lewo
+        y = ship.positions[0].y;
+
+        if (playerBoard.isOnBoard(x, y) && playerBoard.getCellStatus(x, y) != 2 && playerBoard.getCellStatus(x, y) != 3) {
+            nextAIX = x;
+            nextAIY = y;
+            return;
+        }
+
+        x = ship.positions[0].x + 1; //jesli nie, to w prawo
+        y = ship.positions[0].y;
+
+        if (playerBoard.isOnBoard(x, y) && playerBoard.getCellStatus(x, y) != 2 && playerBoard.getCellStatus(x, y) != 3) {
+            nextAIX = x;
+            nextAIY = y;
+            return;
+        }
+
+        x = ship.positions[0].x;
+        y = ship.positions[0].y + 1; //jesli nie, to w gore
+
+        if (playerBoard.isOnBoard(x, y) && playerBoard.getCellStatus(x, y) != 2 && playerBoard.getCellStatus(x, y) != 3) {
+            nextAIX = x;
+            nextAIY = y;
+            return;
+        }
+
+
     }
-	else if (SingleShips.size() > 0) {
-		Ship ship = SingleShips[0];
-		int x = ship.positions[0].x;
-		int y = ship.positions[0].y - 1;
-		if (playerBoard.isonboard(x, y)) {
-			if (playerBoard.getcellstatus(x, y) != 2 && playerBoard.getcellstatus(x, y) != 3) {
-				nextAIX = x;
-				nextAIY = y;
-				return;
-			}
-		}
-		
-		
-			x = ship.positions[0].x - 1;
-			y = ship.positions[0].y;
-			if (playerBoard.isonboard(x, y)) {
-				if (playerBoard.getcellstatus(x, y) != 2 && playerBoard.getcellstatus(x, y) != 3) {
-					nextAIX = x;
-					nextAIY = y;
-					return;
-
-				
-			}
-		}
-
-		
-			x = ship.positions[0].x + 1;
-			y = ship.positions[0].y;
-			if (playerBoard.isonboard(x, y)) {
-				if (playerBoard.getcellstatus(x, y) != 2 && playerBoard.getcellstatus(x, y) != 3) {
-					nextAIX = x;
-					nextAIY = y;
-					return;
-				
-			}
-		}
-
-			x = ship.positions[0].x;
-			y = ship.positions[0].y + 1;
-			if (playerBoard.isonboard(x, y)) {
-				if (playerBoard.getcellstatus(x, y) != 2 && playerBoard.getcellstatus(x, y) != 3) {
-					nextAIX = x;
-					nextAIY = y;
-					return;
-		
-			}
-		}
-   
-		
-	}
-	
-
-}//Funkcja planowania nastêpnego ataku
+}
+    //Funkcja planowania nastêpnego ataku
 
 //funkcja losowego rozmieszczenia statków przeciwnika
 void Game::aiRandomPlacement() {
-    while (true) {
+    while (true) { 
         bool allShipsPlaced = true;
         for (int size : shipSizes) {
             Ship ship(size);
-            std::vector<std::tuple<int, int, bool>> validplacements = getValidPlacements(aiBoard, ship);
-            if (validplacements.empty()) {
+            std::vector<std::tuple<int, int, bool>> validplacements = getValidPlacements(aiBoard, ship); //pobieramy liste mozliwych 
+                                                                            //ustawien statku ktora od razu jest rozlosowana
+			if (validplacements.empty()) { //jesli nie ma mozliwosci ustawienia statku to resetujemy plansze i zaczynamy od nowa
                 aiBoard.clear();
                 allShipsPlaced = false;
                 break;
             }
-            aiBoard.placeShip(ship, sf::Vector2i(std::get<0>(validplacements[0]), std::get<1>(validplacements[0])), std::get<2>(validplacements[0]));
+			aiBoard.placeShip(ship, sf::Vector2i(std::get<0>(validplacements[0]), std::get<1>(validplacements[0])), std::get<2>(validplacements[0])); //jak jest ustawienie to ustawiamy na nim statek
         }
         if (allShipsPlaced) {
             break;
         } 
     }
 }
-  
 
-bool Game::isplacementpossible(std::vector<int> theoryshipSizes) {
+//funkcja sprawdzajaca czy statki o podanej ilosci da sie ustawic na planszy
+bool Game::isPlacementPossible(std::vector<int> theoryshipSizes) { 
     int i = 0;
     Board theoryboard;
     while (true) {
@@ -590,7 +595,8 @@ bool Game::isplacementpossible(std::vector<int> theoryshipSizes) {
     }
 }
 
-Board Game::placerestifpossible(std::vector<int> theoryshipSizes, Board currentboard) {
+//funkcja ustawiajaca reszte statkow, gdy czesc jest juz ustawiona
+Board Game::placeRemainingShips(std::vector<int> theoryshipSizes, Board currentboard) {
     int i = 0;
 	Board theoryboard = currentboard;
     while (true) {
@@ -617,7 +623,8 @@ Board Game::placerestifpossible(std::vector<int> theoryshipSizes, Board currentb
     }
 }
 
-void Game::drawResetScreen(sf::RenderWindow& window)
+//funkcja rysuj¹ca ekran pauzy
+void Game::drawPauseScreen(sf::RenderWindow& window)
 {
 	//Funkcja rysuj¹ca ekran pytaj¹cy czy na pewno chcesz zresetowaæ grê?
 	sf::Text text;  
@@ -627,7 +634,7 @@ void Game::drawResetScreen(sf::RenderWindow& window)
 	text.setStyle(sf::Text::Bold);
 	sf::FloatRect textRect = text.getLocalBounds();
 	text.setOrigin((textRect.left + textRect.width / 2.0f) - 30, textRect.top + textRect.height / 2.0f - 20);
-	text.setPosition(sf::Vector2f(BOARD_OFFSET_X, BOARD_OFFSET_Y + 70));
+	text.setPosition(sf::Vector2f(boardOffsetX, boardOffsetY + 70));
     if (gameStarted)
     {
         text.setString("\t \t \t \t \t \t \t \t PAUZA \n R - Resetuj Gre \n T - Zmien Sciezke dzwiekowa \n M - Mute \n Enter - Wroc do gry");
@@ -651,10 +658,10 @@ void Game::drawResetScreen(sf::RenderWindow& window)
 
 
 //funkcja k³adzenia statku przez gracza
-void Game::PlayerPlacement(sf::Event event, bool* shipsplaced, bool restart) {
+void Game::playerPlacement(sf::Event event, bool* shipsplaced, bool restart) {
     static int currentShip = 0;
 
-    if (restart) {
+	if (restart) { //resetowanie statycznej zmiennej currentShip
         currentShip = 0;
     }
     else {
@@ -665,26 +672,26 @@ void Game::PlayerPlacement(sf::Event event, bool* shipsplaced, bool restart) {
 
         int mouseX = event.mouseButton.x;
         int mouseY = event.mouseButton.y;
-        int col = (mouseX - BOARD_OFFSET_X) / CELL_SIZE;
-        int row = (mouseY - BOARD_OFFSET_Y) / CELL_SIZE;
+        int col = (mouseX - boardOffsetX) / CELL_SIZE;
+        int row = (mouseY - boardOffsetY) / CELL_SIZE;
         Ship ship(shipSizes[currentShip]); //Lewym poziomo, prawym pionowo
-        currentshipsize = shipSizes[currentShip];
+        currentShipSize = shipSizes[currentShip];
         if (event.key.code == sf::Keyboard::R)  //je¿eli wciœniêto r
         {
             playerBoard.clear(); //resetuje ustawienie statków
             currentShip = 0;
         }
-        if (!pausescreen && event.type == sf::Event::MouseButtonPressed) {
+        if (!showPauseScreen && event.type == sf::Event::MouseButtonPressed) {
 
-            bool horizontal = event.mouseButton.button == sf::Mouse::Left;
+            bool isHorizontal = event.mouseButton.button == sf::Mouse::Left;
             if (col >= 0 && row >= 0 && col < GRID_SIZE && row < GRID_SIZE) {
-                if (playerBoard.isValidPlacement(ship, sf::Vector2i(col, row), horizontal)) {
-                    playerBoard.placeShip(ship, sf::Vector2i(col, row), horizontal);
+                if (playerBoard.isValidPlacement(ship, sf::Vector2i(col, row), isHorizontal)) {
+                    playerBoard.placeShip(ship, sf::Vector2i(col, row), isHorizontal);
                     currentShip++;
                 }
             }
         }
-        if (!pausescreen && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Q)
+        if (!showPauseScreen && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Q)
         {
             
             std::vector<int> theoryshipSizes;
@@ -692,8 +699,8 @@ void Game::PlayerPlacement(sf::Event event, bool* shipsplaced, bool restart) {
 			{
 				theoryshipSizes.push_back(shipSizes[i]);
 			}
-            Board temp = placerestifpossible(theoryshipSizes, playerBoard);
-            if (temp.GetNumberOfShips()!=0)
+            Board temp = placeRemainingShips(theoryshipSizes, playerBoard);
+            if (temp.getNumberOfShips()!=0)
             {
 				playerBoard = temp;
 				currentShip = shipSizes.size();
@@ -704,13 +711,14 @@ void Game::PlayerPlacement(sf::Event event, bool* shipsplaced, bool restart) {
     }
 }
 
+//funkcja zwracaj¹ca mo¿liwe ustawienia statku na planszy
 std::vector<std::tuple<int, int, bool>> Game::getValidPlacements(Board& board, Ship &ship) {
     std::vector<std::tuple<int, int, bool>> validPlacements;
     for (int x = 0; x < 10; ++x) {
         for (int y = 0; y < 10; ++y) {
-            for (bool horizontal : {true, false}) {
-                if (board.isValidPlacement(ship, sf::Vector2i(x, y), horizontal)) {
-                    validPlacements.emplace_back(x, y, horizontal);
+            for (bool isHorizontal : {true, false}) {
+                if (board.isValidPlacement(ship, sf::Vector2i(x, y), isHorizontal)) {
+                    validPlacements.emplace_back(x, y, isHorizontal);
                 }
             }
         }
@@ -719,33 +727,34 @@ std::vector<std::tuple<int, int, bool>> Game::getValidPlacements(Board& board, S
     return validPlacements;
 }
 
-void Game::textbox(sf::Event event, float x, float y, int max) {
-    textboxtext.setFont(font);
-    textboxtext.setCharacterSize(30);
-    textboxtext.setFillColor(sf::Color::Green);
-    textboxtext.setStyle(sf::Text::Bold);
-    textboxtext.setPosition(x, y);
-    if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::BackSpace && playerInput.getSize() > 0)
+//funkcja obs³uguj¹ca pole do wpisywania tekstu
+void Game::handleTextBox(sf::Event event, float x, float y, int max) {
+    textBoxText.setFont(font);
+    textBoxText.setCharacterSize(30);
+    textBoxText.setFillColor(sf::Color::Green);
+    textBoxText.setStyle(sf::Text::Bold);
+    textBoxText.setPosition(x, y);
+    if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::BackSpace && playerInput.getSize() > 0) 
     {
-        std::string temp = playerInput;
+        std::string temp = playerInput; 
         temp.resize(temp.size() - 1);
         playerInput = temp;
     }
     if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter)
     {
-        if (playerInput.getSize() > 0)
+        if (playerInput.getSize() > 0) 
         {
-            currentnumberofships = std::stoi((std::string)(playerInput));
+            currentNumberOfShips = std::stoi((std::string)(playerInput));
         }
         else
         {
-            currentnumberofships = 0;
+            currentNumberOfShips = 0;
         }
-        typedin = true;
+        typedIn = true;
     }
 
     if (event.type == sf::Event::TextEntered) {
-        if (event.text.unicode <= 57 && event.text.unicode >= 48) //je¿eli liczba
+        if (event.text.unicode <= '0' && event.text.unicode >= '9')
         {
             if (!(playerInput.getSize() == 0 && '0' == event.text.unicode))
             {
@@ -762,23 +771,23 @@ void Game::textbox(sf::Event event, float x, float y, int max) {
         }
         if (playerInput.getSize() != 0)
         {
-            textboxtext.setString(playerInput);
+            textBoxText.setString(playerInput);
         }
         else
         {
-            textboxtext.setString("0");
+            textBoxText.setString("0");
         }
 
     }
 }
 
-
-int Game::FindActMax(int size) {
+//funkcja znajduj¹ca maksymaln¹ iloœæ statków o podanej wielkoœci, które mo¿na postawiæ na planszy
+int Game::findCurrentMax(int size) {
     int wynik = 0;
     std::vector<int> theoryshipSizes = shipSizes;
     while (true) {
         theoryshipSizes.push_back(size);
-        if (isplacementpossible(theoryshipSizes))
+        if (isPlacementPossible(theoryshipSizes))
         { wynik++; }
         else {
             return wynik;
@@ -786,6 +795,7 @@ int Game::FindActMax(int size) {
     }
 }
 
+//funkcja rysuj¹ca pole informujace o statkach ktore sa posrod wybranych
 void Game::drawChosenShips(sf::RenderWindow& window) {
     sf::Vector2f offset = sf::Vector2f(430, 140);
     sf::Text text;
@@ -801,7 +811,7 @@ void Game::drawChosenShips(sf::RenderWindow& window) {
     float smallCELL_SIZE = CELL_SIZE * 0.75;
     text.setPosition(offset.x + 600, offset.y - 50);
 	text.setString("Wybrane statki: ");
-    if (progress>1)
+    if (shipChoiceProgress>1)
     {
         window.draw(text);
     }
@@ -826,11 +836,12 @@ void Game::drawChosenShips(sf::RenderWindow& window) {
     }
 }
 
-std::vector<int> Game::getUnplacedShipsizes() {
+//funkcja zwracaj¹ca statki, które nie zosta³y jeszcze ustawione
+std::vector<int> Game::getUnplacedShipSizes() {
 	std::vector<int> unplaced;
 	int i = 0;
     int j = 0;
-	std::vector<int> placedships = playerBoard.getshipSizes();
+	std::vector<int> placedships = playerBoard.getShipSizes();
     if (placedships.empty())
     {
 		return shipSizes;
@@ -849,7 +860,8 @@ std::vector<int> Game::getUnplacedShipsizes() {
 	return unplaced;
 }
 
-void Game::drawRemainingShipstoplace(sf::RenderWindow& window) {
+//funkcja rysuj¹ca statki, które pozosta³y do ustawienia
+void Game::drawRemainingShipsToPlace(sf::RenderWindow& window) {
     sf::Vector2f offset = sf::Vector2f(430, 140);
     sf::Text text;
     text.setFont(font);
@@ -861,7 +873,7 @@ void Game::drawRemainingShipstoplace(sf::RenderWindow& window) {
     text.setPosition(offset.x + 600, offset.y - 50);
     text.setString("Statki do ustawienia: ");
 	window.draw(text);
-    for (int size : unplacedshipsizes)
+    for (int size : unplacedShipSizes)
 	{
            remshipcount[size]++;
 	}
